@@ -23,7 +23,7 @@ from nonebot_plugin_uninfo import ADMIN, Uninfo
 from zhenxun.services.log import logger
 from zhenxun.utils.rules import ensure_group
 
-from .config import ChatConfig
+from .config import ChatConfig, ThreadCache
 from .data_source import (
     ChatManager,
     hello,
@@ -141,6 +141,7 @@ async def _(bot: Bot, msg: UniMsg, session: Uninfo):
             count=ChatConfig.get("CONTEXT_WINDOW"),
         )
     thread = xmlify_thread_sync(history, bot=bot)
+    ThreadCache.set(session.user.id, thread)
 
     result = await ChatManager.normal_chat_result(
         thread=thread.xml_content, session=session
