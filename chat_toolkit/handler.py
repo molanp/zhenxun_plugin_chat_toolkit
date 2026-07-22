@@ -141,7 +141,6 @@ async def _(bot: Bot, msg: UniMsg, session: Uninfo):
             count=ChatConfig.get("CONTEXT_WINDOW"),
         )
     thread = xmlify_thread_sync(history, bot=bot)
-    print("\n", thread.xml_content, "\n")
 
     result = await ChatManager.normal_chat_result(
         thread=thread.xml_content, session=session
