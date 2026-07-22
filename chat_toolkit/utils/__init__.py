@@ -129,7 +129,7 @@ async def build_system_prompt(session: Uninfo) -> str:
 <group_member> 会同时包含 <card> 和 <nickname> 元素，分别表示群名片和昵称。如果二者同时存在，则以群名片（card）为准确定称呼。
 当前消息位于 <thread> 的最后一条消息中。
 
-图片等媒体资源的属性中会带有 url。
+图片等媒体资源的属性中会带有 id
 对于图片，你可以使用 describe_image 来获取图片的描述信息，或者对于图片提出你自己的疑问。
 其他资源暂时没有处理方式，你可以直接忽略它们。
 

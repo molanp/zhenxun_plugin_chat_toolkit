@@ -1,4 +1,5 @@
 import time
+from typing import Any, OrderedDict, TypeVar
 
 import aiofiles
 import nonebot
@@ -141,3 +142,35 @@ plugin_config: PluginConfig = PluginConfig.parse_obj(
 )
 
 nicknames = plugin_config.nickname
+
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+class LimitedSizeDict(OrderedDict[K, V]):
+    """
+    定长字典
+    """
+
+    def __init__(self, *args, max_size=20, **kwargs):
+        self.max_size = max_size
+        super().__init__(*args, **kwargs)
+
+    def __setitem__(self, key: K, value: V):
+        super().__setitem__(key, value)
+        if len(self) > self.max_size:
+            self.popitem(last=False)
+
+
+class ThreadCache:
+    _ThreadCache = LimitedSizeDict[str, Any](max_size=50)
+
+    @classmethod
+    def get(cls, uid: str, thread_id: str) -> dict[str, str] | None:
+        if thread := cls._ThreadCache.get(uid):
+            return thread.resources.get(thread_id)
+        return
+
+    @classmethod
+    def set(cls, uid: str, thread: Any):
+        cls._ThreadCache[uid] = thread

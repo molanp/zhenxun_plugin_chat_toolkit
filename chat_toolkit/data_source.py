@@ -1,14 +1,9 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import datetime
 import os
 from pathlib import Path
 import random
 
-from nonebot_plugin_alconna import (
-    Image,
-    Text,
-    UniMessage,
-)
 from nonebot_plugin_apscheduler import scheduler
 from nonebot_plugin_uninfo import Uninfo
 
@@ -16,16 +11,12 @@ from zhenxun.configs.config import BotConfig
 from zhenxun.configs.path_config import IMAGE_PATH
 from zhenxun.models.ban_console import BanConsole
 from zhenxun.services.ai.core.messages.models import LLMMessage
-from zhenxun.services.ai.core.messages.parts import (
-    BaseContentPart,
-    LLMContentPart,
-    ToolCallPart,
-)
+from zhenxun.services.ai.core.messages.parts import ToolCallPart
 from zhenxun.services.ai.core.messages.responses import ChatResponse
 from zhenxun.services.ai.core.options import GenerationConfig
 from zhenxun.services.log import logger
 
-from .config import ChatConfig, get_prompt
+from .config import ChatConfig, get_prompt, LimitedSizeDict
 from .model import ChatToolkitChatHistory
 from .tools import ToolsManager
 from .utils import (
@@ -48,7 +39,7 @@ class HistoryEntry:
 class HistoryCache:
     ttl_seconds: int
     max_len: int
-    _store: dict[str, HistoryEntry] = field(default_factory=dict)
+    _store = LimitedSizeDict[str, HistoryEntry](max_size=50)
 
     def get(self, uid: str) -> list[LLMMessage] | None:
         now = datetime.datetime.now()
@@ -312,13 +303,3 @@ class ChatManager:
             session=session,
         )
         return await ToolsManager.call_func(session, tool_call.tool_name, args)
-
-
-def msg_to_ai(msg: UniMessage[Text | Image]) -> list[LLMContentPart]:
-    parts: list[LLMContentPart] = []
-    for part in msg:
-        if isinstance(part, Text):
-            parts.append(BaseContentPart.text_part(text=part.text))
-        elif isinstance(part, Image) and part.url:
-            parts.append(BaseContentPart.image_url_part(url=part.url))
-    return parts
