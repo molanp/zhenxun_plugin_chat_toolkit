@@ -18,7 +18,7 @@ __plugin_meta__ = PluginMetadata(
     """.strip(),
     extra=PluginExtraData(
         author="molanp",
-        version="1.1",
+        version="1.2",
         superuser_help="""
         超级管理员额外命令
         格式:
