@@ -204,7 +204,7 @@ class ChatManager:
         for rec in records:
             await ChatToolkitChatHistory.create(
                 uid=uid,
-                content=rec.content,
+                content=rec.to_storage_dict(),
             )
 
         # 2. 同步更新内存缓存
