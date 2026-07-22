@@ -16,7 +16,7 @@ from zhenxun.services.ai.core.messages.responses import ChatResponse
 from zhenxun.services.ai.core.options import GenerationConfig
 from zhenxun.services.log import logger
 
-from .config import ChatConfig, get_prompt, LimitedSizeDict
+from .config import ChatConfig, LimitedSizeDict, get_prompt
 from .model import ChatToolkitChatHistory
 from .tools import ToolsManager
 from .utils import (
@@ -26,7 +26,7 @@ from .utils import (
 from .utils.xai import generate
 
 CHAT_HISTORY_TTL_SECONDS = 120 * 60  # 120 分钟
-CHAT_HISTORY_MAX_LEN = 200
+CHAT_HISTORY_MAX_LEN = 50
 
 
 @dataclass
