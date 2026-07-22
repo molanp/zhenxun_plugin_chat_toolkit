@@ -1,0 +1,64 @@
+import inspect
+from typing import Any
+
+from nonebot_plugin_uninfo import Uninfo
+import ujson
+
+from zhenxun.services.log import logger
+
+from .AbstractTool import registry
+
+
+class ToolsManager:
+    @classmethod
+    async def init(cls, disable_tools: list[str] | None = None) -> None:
+        """Initialize the tools registry by loading all tool modules."""
+        await registry.load_modules(disable_tools)
+
+    @staticmethod
+    def get_tools() -> list[dict[str, Any]]:
+        """Return the tools registry."""
+        return [t.to_schema() for t in registry.get_tools()]
+
+    @staticmethod
+    async def call_func(session: Uninfo, name: str, args: Any) -> str:
+        """Call the function of the specified tool."""
+        descriptor = registry.get_tool(name)
+        if descriptor is None:
+            return "error: dispatcher_tool_not_found_in_registry"
+
+        func = descriptor.func
+        sig = inspect.signature(func)
+        parameters = sig.parameters
+
+        if isinstance(args, str):
+            try:
+                kwargs = ujson.loads(args)
+            except Exception as e:
+                return f"error: dispatcher_json_parse_failed, bad_arguments_string: {args}, detail: {e!s}"
+        elif isinstance(args, dict):
+            kwargs = args
+        else:
+            return f"error: dispatcher_invalid_carrier_type, expected: json_string_or_dict, got: {type(args).__name__}"
+
+        if "session" in parameters:
+            kwargs["session"] = session
+
+        try:
+            return await func(**kwargs)
+        except TypeError as e:
+            logger.error("参数类型或数量错误", "chat_toolkit.tools", e=e)
+            return f"error: runner_arguments_mismatch, detail: {e!s}"
+        except Exception as e:
+            logger.error(f"调用工具 {name} 失败", "chat_toolkit.tools", e=e)
+            return f"error: tool_internal_critical_failure, exception_type: {type(e).__name__}, detail: {e!s}"
+
+    @classmethod
+    async def reload_tools(cls) -> None:
+        """Reload all tool modules."""
+        await registry.reload()
+
+    @classmethod
+    async def reflash_tools(cls) -> None:
+        """Reflash all tool modules list."""
+        await registry.reload()
