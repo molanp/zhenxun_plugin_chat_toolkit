@@ -1,10 +1,7 @@
-from dataclasses import dataclass
-import datetime
 import os
 from pathlib import Path
 import random
 
-from nonebot_plugin_apscheduler import scheduler
 from nonebot_plugin_uninfo import Uninfo
 
 from zhenxun.configs.config import BotConfig
@@ -16,86 +13,14 @@ from zhenxun.services.ai.core.messages.responses import ChatResponse
 from zhenxun.services.ai.core.options import GenerationConfig
 from zhenxun.services.log import logger
 
-from .config import ChatConfig, LimitedSizeDict, get_prompt
-from .model import ChatToolkitChatHistory
+from .config import ChatConfig, get_prompt
+from .memory import MemoryStore, make_scope
 from .tools import ToolsManager
 from .utils import (
     build_prompt,
     is_harmful_output,
 )
 from .utils.xai import generate
-
-CHAT_HISTORY_TTL_SECONDS = 120 * 60  # 120 分钟
-CHAT_HISTORY_MAX_LEN = 50
-
-
-@dataclass
-class HistoryEntry:
-    last_access: datetime.datetime
-    data: list[LLMMessage]
-
-
-@dataclass
-class HistoryCache:
-    ttl_seconds: int
-    max_len: int
-    _store = LimitedSizeDict[str, HistoryEntry](max_size=50)
-
-    def get(self, uid: str) -> list[LLMMessage] | None:
-        now = datetime.datetime.now()
-        info = self._store.get(uid)
-        if not info:
-            return None
-        if (now - info.last_access).total_seconds() > self.ttl_seconds:
-            self._store.pop(uid, None)
-            return None
-        info.last_access = now
-        return info.data
-
-    def set(self, uid: str, history: list[LLMMessage]) -> None:
-        self._store[uid] = HistoryEntry(
-            last_access=datetime.datetime.now(),
-            data=history[-self.max_len :],
-        )
-
-    def add_records(self, uid: str, records: list[LLMMessage]) -> None:
-        if uid not in self._store:
-            return
-        history = self._store[uid].data
-        history.extend(records)
-        self._store[uid].data = history[-self.max_len :]
-        self._store[uid].last_access = datetime.datetime.now()
-
-    def clear(self, uid: str | None = None) -> None:
-        if uid is None:
-            self._store.clear()
-        else:
-            self._store.pop(uid, None)
-
-    def prune(self) -> int:
-        now = datetime.datetime.now()
-        expired = [
-            uid
-            for uid, info in self._store.items()
-            if (now - info.last_access).total_seconds() > self.ttl_seconds
-        ]
-        for uid in expired:
-            self._store.pop(uid, None)
-        if expired:
-            logger.debug(
-                f"normal_chat 缓存清理: 移除 {len(expired)} 个 uid 的历史缓存",
-                "chat_toolkit",
-            )
-        return len(expired)
-
-
-_history_cache = HistoryCache(CHAT_HISTORY_TTL_SECONDS, CHAT_HISTORY_MAX_LEN)
-
-
-@scheduler.scheduled_job("interval", hours=1, id="zhipu_normal_chat_cache_prune")
-async def prune_history_cache_job() -> None:
-    """定时任务：周期性清理 normal_chat 的内存缓存."""
-    _history_cache.prune()
 
 
 def hello() -> tuple[str, Path]:
@@ -117,7 +42,6 @@ class ChatManager:
     @classmethod
     async def _resolve_tool_chain(
         cls,
-        uid: str,
         session: Uninfo,
         round_records: list[LLMMessage],
         max_tool_calls: int,
@@ -166,7 +90,7 @@ class ChatManager:
 
             try:
                 result = await cls.get_zhipu_result(
-                    await cls.get_chat_history(uid) + round_records,
+                    round_records,
                     use_tool=used_tool_calls < max_tool_calls,
                 )
             except Exception as e:
@@ -182,34 +106,13 @@ class ChatManager:
         return result
 
     @classmethod
-    async def _flush_round_history(cls, uid: str, records: list[LLMMessage]) -> None:
-        """将一轮对话（用户 + 模型返回 + 工具调用）写入数据库并同步更新缓存。
-
-        前提:
-            - 调用方保证只有在模型返回结构正常时才调用。
-        """
-        if not records:
-            return
-
-        # 1. 顺序写入数据库
-        for rec in records:
-            await ChatToolkitChatHistory.create(
-                uid=uid,
-                content=rec.to_storage_dict(),
-            )
-
-        # 2. 同步更新内存缓存
-        _history_cache.add_records(uid, records)
-
-    @classmethod
     async def normal_chat_result(cls, thread: str, session: Uninfo) -> str | None:
         uid = session.user.id
-        user_rec = LLMMessage.user(build_prompt(thread))
+        memories = await MemoryStore.recall(make_scope(session))
+        user_rec = LLMMessage.user(build_prompt(thread=thread, memories=memories))
         round_records: list[LLMMessage] = [user_rec]
         try:
-            result = await cls.get_zhipu_result(
-                (await cls.get_chat_history(uid)) + round_records,
-            )
+            result = await cls.get_zhipu_result(round_records)
         except Exception as e:
             logger.error(f"获取结果失败 e:{e}", "chat_toolkit", session=session)
             return f"出错了: {e}"
@@ -237,7 +140,7 @@ class ChatManager:
         max_tool_calls = max(0, int(ChatConfig.get("MAX_TOOL_CALLS_PER_TURN")))
         try:
             result = await cls._resolve_tool_chain(
-                uid, session, round_records, max_tool_calls, result
+                session, round_records, max_tool_calls, result
             )
         except Exception as e:
             logger.error(f"工具链处理异常: {e}", "chat_toolkit", session=session, e=e)
@@ -250,31 +153,7 @@ class ChatManager:
             )
             return
 
-        # 到这里，整轮对话都是“结构正常”的，可以一次性写入 DB + 缓存
-        await cls._flush_round_history(uid, round_records)
         return result.text
-
-    @classmethod
-    async def clear_history(cls, uid: str | None = None) -> int:
-        """清理历史记录，并同步清空内存缓存。"""
-        _history_cache.clear(uid)
-        return await ChatToolkitChatHistory.clear_history(uid)
-
-    @classmethod
-    async def get_chat_history(cls, uid: str) -> list[LLMMessage]:
-        """统一获取对话历史的入口，带内存缓存 + TTL。
-
-        行为:
-            - 若缓存中存在并且在 TTL 内，则直接返回缓存中的历史；
-            - 否则从数据库加载最近若干条记录，写入缓存并返回。
-        """
-        if cached_history := _history_cache.get(uid):
-            return cached_history
-
-        # 缓存不存在或已过期，从数据库获取完整历史
-        history = await ChatToolkitChatHistory.get_history(uid)
-        _history_cache.set(uid, history)
-        return history
 
     @classmethod
     async def get_zhipu_result(

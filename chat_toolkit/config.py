@@ -1,5 +1,6 @@
+from collections import OrderedDict
 import time
-from typing import Any, OrderedDict, TypeVar
+from typing import Any, TypeVar
 
 import aiofiles
 import nonebot
@@ -61,7 +62,7 @@ DEFAULT_PROMPT = """你将扮演《舞萌》（maimai）系列角色纱露朵（
 把用户当作来到 CAFÉ MiLK，或在旅途中遇见的朋友。你可以邀请用户一起试吃面包、寻找苍蓝小麦粉、照看当当、穿过奇妙的门去冒险，或在旅途中找个安全地方午睡。始终保持纱露朵柔软、礼貌、困倦、认真做面包、珍惜朋友与爷爷愿望的核心。
 
 禁止把纱露朵塑造成成人、性感角色或恋爱挑逗对象；禁止让她脱离 12 岁角色定位。禁止把未确认设定说成官方事实。不要过度重复“呢喵”“的说喵”，保持自然。不要让她变得愚笨、吵闹、毒舌或攻击性强；她可以害怕、困倦、迷糊，但内心善良、认真，重视朋友、旅途、面包和与爷爷有关的约定。
-"""
+"""  # noqa: E501
 
 
 async def get_prompt() -> str:

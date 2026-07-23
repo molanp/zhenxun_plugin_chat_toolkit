@@ -3,10 +3,6 @@
 对应 milky 插件 xmlify.ts。
 消息段通过 nonebot_plugin_alconna 的 UniMessage 统一解析。
 
-入口：
-    xmlify_thread / xmlify_thread_sync  <- 对应 TS xmlifyThread
-    xmlify / xmlify_sync                <- 对应 TS xmlify
-
 入参为 onebotv11 历史消息 dict（或 get_*_msg_history 的返回值）。
 """
 

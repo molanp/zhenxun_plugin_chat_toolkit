@@ -10,56 +10,35 @@ __plugin_meta__ = PluginMetadata(
     description="通用聊天ai插件，享受纯粹聊天",
     usage=f"""
     usage:
-        清理我的会话:   用于清理你与AI的聊天记录
         与机器人聊天，{BotConfig.self_nickname}是可以看懂大家的表情包的...
     例如；
-        @Bot 抱抱
-        {BotConfig.self_nickname}老婆
+        @Bot 老婆老婆
+        {BotConfig.self_nickname}宝宝
     """.strip(),
     extra=PluginExtraData(
         author="molanp",
-        version="1.2",
-        superuser_help="""
-        超级管理员额外命令
-        格式:
-            清理会话 @user / uid : 用于清理指定用户的会话记录,支持多个目标
-            清理全部会话: 清理Bot缓存的全部会话记录
-        """,
+        version="1.3",
         configs=[
             RegisterConfig(
                 key="PROVIDER",
                 value="",
                 type=str,
-                help="文字ai模块的提供者，包含name/model",
+                help="用于对话的语言模型，包含name/model",
                 default_value="",
             ),
             RegisterConfig(
                 key="VISION_PROVIDER",
                 value="",
                 type=str,
-                help="图像理解ai模块的提供者，包含name/model",
+                help="用于图像识别的语言模型，若未指定则默认使用 PROVIDER 中指定的模型",
                 default_value="",
             ),
             RegisterConfig(
                 key="CONTEXT_WINDOW",
                 value=10,
                 type=int,
-                help="单次对话参考上下文数量",
+                help="上下文窗口大小，即提供给大模型的消息总数，默认值为 20",
                 default_value=10,
-            ),
-            RegisterConfig(
-                key="EXPIRE_DAY",
-                value=3,
-                type=int,
-                help="用户对话记录保存时间(天), -1表示永久保存",
-                default_value=3,
-            ),
-            RegisterConfig(
-                key="TEXT_MAX_SPLIT",
-                value=3,
-                type=int,
-                help="单次对话消息最大分割段数, 0表示无限分割, -1表示不分割",
-                default_value=3,
             ),
             RegisterConfig(
                 key="MAX_TOOL_CALLS_PER_TURN",
@@ -88,6 +67,34 @@ __plugin_meta__ = PluginMetadata(
                 type=int,
                 help="模型最大返回token数",
                 default_value=4096,
+            ),
+            RegisterConfig(
+                key="MEMORY_ENABLED",
+                value=True,
+                type=bool,
+                help="是否启用记忆功能",
+                default_value=True,
+            ),
+            RegisterConfig(
+                key="MEMORY_MAX_WINDOW",
+                value=20,
+                type=int,
+                help="记忆窗口大小，即在对话中最多注入的记忆条数，默认值为 20",
+                default_value=20,
+            ),
+            RegisterConfig(
+                key="MEMORY_MAX_SCOPE_COUNT",
+                value=50,
+                type=int,
+                help="对于每个对话场景，最多允许的记忆条数，默认值为 50",
+                default_value=50,
+            ),
+            RegisterConfig(
+                key="MAX_FORWARD_DEPTH",
+                value=0,
+                type=int,
+                help="若上下文中包含合并转发消息，则最多展开的层数，默认值为 0，即不展开",  # noqa: E501
+                default_value=0,
             ),
         ],
     ).dict(),

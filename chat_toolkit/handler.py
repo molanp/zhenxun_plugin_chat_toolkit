@@ -1,5 +1,3 @@
-import asyncio
-
 from nonebot import get_driver, on_message
 from nonebot.adapters import Bot
 from nonebot.permission import SUPERUSER
@@ -7,7 +5,6 @@ from nonebot.rule import Rule, to_me
 from nonebot_plugin_alconna import (
     Alconna,
     Args,
-    Arparma,
     At,
     CommandMeta,
     Image,
@@ -17,21 +14,16 @@ from nonebot_plugin_alconna import (
     UniMsg,
     on_alconna,
 )
-from nonebot_plugin_apscheduler import scheduler
 from nonebot_plugin_uninfo import ADMIN, Uninfo
-
-from zhenxun.services.log import logger
-from zhenxun.utils.rules import ensure_group
 
 from .config import ChatConfig, ThreadCache
 from .data_source import (
     ChatManager,
     hello,
 )
-from .model import ChatToolkitChatHistory
 from .tools import ToolsManager
-from .utils import send_face, split_text
-from .utils.xmlify import xmlify_thread_sync
+from .utils import parse_reply_message, send_face
+from .utils.xmlify import XmlifyOptions, xmlify_thread_sync
 
 INIT = True
 
@@ -56,24 +48,10 @@ async def block_qbot(session: Uninfo) -> bool:
 
 @get_driver().on_startup
 async def init_tools():
-    await ToolsManager.init()
-
-
-@scheduler.scheduled_job(
-    "cron",
-    hour=0,
-    minute=0,
-)
-async def delete_expired_chat_history():
-    day = ChatConfig.get("EXPIRE_DAY")
-    if day < 0:
-        logger.info("跳过清理过期会话任务: 用户设置永不过期", "chat_toolkit")
-        return
-    try:
-        deleted = await ChatToolkitChatHistory.delete_old_records(day)
-        logger.info(f"成功清理 {deleted} 条过期会话 记录", "chat_toolkit")
-    except Exception as e:
-        logger.error("清理过期会话记录失败", "chat_toolkit", e=e)
+    if ChatConfig.get("MEMORY_ENABLED"):
+        await ToolsManager.init()
+    else:
+        await ToolsManager.init(disable_tools=["remember", "forget"])
 
 
 chat = on_message(
@@ -130,7 +108,7 @@ async def _(bot: Bot, msg: UniMsg, session: Uninfo):
     if not plain_text:
         text, image_path = hello()
         await UniMessage([Text(text), Image(path=image_path)]).finish(reply_to=True)
-    if ensure_group(session):
+    if session.scene.is_group:
         history = await bot.get_group_msg_history(
             group_id=int(session.scene.id),
             count=ChatConfig.get("CONTEXT_WINDOW"),
@@ -140,7 +118,11 @@ async def _(bot: Bot, msg: UniMsg, session: Uninfo):
             user_id=int(session.user.id),
             count=ChatConfig.get("CONTEXT_WINDOW"),
         )
-    thread = xmlify_thread_sync(history, bot=bot)
+    thread = xmlify_thread_sync(
+        messages=history,
+        bot=bot,
+        options=XmlifyOptions(max_forward_depth=ChatConfig.get("MAX_FORWARD_DEPTH")),
+    )
     ThreadCache.set(session.user.id, thread)
 
     result = await ChatManager.normal_chat_result(
@@ -152,47 +134,7 @@ async def _(bot: Bot, msg: UniMsg, session: Uninfo):
     if result.startswith("出错了"):
         await UniMessage(Text(result)).finish(reply_to=True)
 
-    for r, delay in await split_text(result):
-        await UniMessage(r).send(reply_to=True)
-        await asyncio.sleep(delay)
+    reply_id, message = parse_reply_message(result)
+    await UniMessage(message).send(reply_to=reply_id)
     if face := await send_face(bot):
         await face.send()
-
-
-@clear_my_chat.handle()
-async def _(session: Uninfo):
-    uid = session.user.id
-    await clear_my_chat.send(
-        Text(f"已清理 {uid} 的 {await ChatManager.clear_history(uid)} 条数据"),
-        reply_to=True,
-    )
-
-
-@clear_all_chat.handle()
-async def _():
-    await clear_all_chat.send(
-        Text(f"已清理 {await ChatManager.clear_history()} 条用户数据"),
-        reply_to=True,
-    )
-
-
-@clear_chat.handle()
-async def _(param: Arparma):
-    targets = []
-    for t in param.query("target"):  # type: ignore
-        if isinstance(t, At):
-            targets.append(t.target)
-        elif isinstance(t, Text):
-            targets.append(t.text.strip())
-        else:
-            targets.append(str(t))
-
-    tasks = [ChatManager.clear_history(t) for t in targets]
-    results = await asyncio.gather(*tasks)
-    counts = dict(zip(targets, results))
-
-    result = [Text(f"• {t}: {count} 条数据\n") for t, count in counts.items()]
-    summary = Text(f"已清理 {len(targets)} 个目标的聊天记录：\n")
-    messages = [summary, *result]
-
-    await clear_chat.send(UniMessage(messages), reply_to=True)
