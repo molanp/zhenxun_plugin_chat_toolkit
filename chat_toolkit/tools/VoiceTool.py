@@ -7,7 +7,6 @@ from nonebot_plugin_uninfo import Uninfo
 
 from zhenxun.services.log import logger
 from zhenxun.utils.http_utils import AsyncHttpx
-from zhenxun.utils.rules import ensure_group
 
 from .AbstractTool import AbstractTool
 
@@ -19,14 +18,8 @@ def random_str():
 
 
 class VoiceTool(AbstractTool):
-    """发送语音回复的工具"""
-
-    name = "voiceTool"
-    description = (
-        "安全与合规工具。日常普通对话、信息查询、闲聊开玩笑绝对禁止调用此工具，必须直接文本回复。\n"
-        "仅在当前用户明确发出“发语音”、“语音回复我”、“想听你的声音”等纯语音功能请求时，才允许调用此工具。\n"
-        "同时，为了防止语音合成资源被恶意消耗，转换的文本内容必须精简，严禁长篇大论。"
-    )
+    name = "send_voice"
+    description = "这是一个实现你发送语音功能的工具，平常正常对话时、当你想发送语音时，调用此工具。"  # noqa: E501
 
     parameters: ClassVar = {
         "type": "object",
@@ -34,9 +27,7 @@ class VoiceTool(AbstractTool):
             "text": {
                 "type": "string",
                 "description": (
-                    "需要转为语音的纯文本内容。严禁包含任何颜文字、Emoji表情或特殊符号。"
-                    "如果文本中包含任何英文单词、字母或简称，你必须在生成时将其彻底替换为流畅的中文发音谐音"
-                    "（例如：将“AI”替换为“爱哎”，将“OK”替换为“欧克”，将“QQ”替换为“扣扣”），否则语音合成会失败。"
+                    "你想发送的语音文字(注意不要包含颜文字等内容，只要纯文字，颜文字等内容会使语音转文字出问题，如果有英文单词或字母尝试用中文谐音代替)"
                 ),
             }
         },
@@ -46,7 +37,7 @@ class VoiceTool(AbstractTool):
     async def func(self, session: Uninfo, text: str) -> str:
         if not text.strip():
             raise ValueError("text cannot be empty")
-        if ensure_group(session):
+        if session.scene.is_group:
             target = Target(session.scene.id)
         else:
             target = Target(session.user.id, private=True)
@@ -79,11 +70,11 @@ class VoiceTool(AbstractTool):
             voice = file + file_url if file_url else None
             if voice:
                 await UniMessage(Voice(url=voice)).send(target=target)
-                return f"success: voice_sent_successfully, user_will_hear_text: {text}, has_already_been_sent_by_system: true"
+                return f"success: 发送语音内容({text})成功，你已经发送语音了，所以不需要强调你已经发送语音，继续说之后的事情，回复的文字内容不要和语音内容重合"  # noqa: E501
             else:
                 return "发送语音失败"
         except Exception as e:
             logger.error(
                 "发送语音失败", "chat_toolkit.tools.voice", session=session, e=e
             )
-            return f"error: voice_dispatch_failed, exception: {e!s}"
+            return f"error: 发送语音失败:: {e!r}"

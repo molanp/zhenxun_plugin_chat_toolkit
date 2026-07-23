@@ -35,11 +35,11 @@ class ToolsManager:
             try:
                 kwargs = ujson.loads(args)
             except Exception as e:
-                return f"error: dispatcher_json_parse_failed, bad_arguments_string: {args}, detail: {e!s}"
+                return f"error: dispatcher_json_parse_failed, bad_arguments_string: {args}, detail: {e!s}"  # noqa: E501
         elif isinstance(args, dict):
             kwargs = args
         else:
-            return f"error: dispatcher_invalid_carrier_type, expected: json_string_or_dict, got: {type(args).__name__}"
+            return f"error: dispatcher_invalid_carrier_type, expected: json_string_or_dict, got: {type(args).__name__}"  # noqa: E501
 
         if "session" in parameters:
             kwargs["session"] = session
@@ -51,7 +51,7 @@ class ToolsManager:
             return f"error: runner_arguments_mismatch, detail: {e!s}"
         except Exception as e:
             logger.error(f"调用工具 {name} 失败", "chat_toolkit.tools", e=e)
-            return f"error: tool_internal_critical_failure, exception_type: {type(e).__name__}, detail: {e!s}"
+            return f"error: tool_internal_critical_failure, exception_type: {type(e).__name__}, detail: {e!s}"  # noqa: E501
 
     @classmethod
     async def reload_tools(cls) -> None:

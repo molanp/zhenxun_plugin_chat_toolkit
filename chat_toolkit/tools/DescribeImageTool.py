@@ -1,12 +1,13 @@
 from typing import ClassVar
 
 from nonebot_plugin_uninfo import Uninfo
-from ..config import ChatConfig, ThreadCache
+
 from zhenxun.services.ai.core.messages.models import LLMMessage
 from zhenxun.services.ai.core.messages.parts import BaseContentPart
 from zhenxun.services.ai.llm import chat
 from zhenxun.services.log import logger
 
+from ..config import ChatConfig, ThreadCache
 from .AbstractTool import AbstractTool
 
 
@@ -46,7 +47,7 @@ class DescribeImageTool(AbstractTool):
                         BaseContentPart.text_part(text=question),
                     ],
                 ),
-                model=ChatConfig.get("VISION_PROVIDER"),
+                model=ChatConfig.get("VISION_PROVIDER") or ChatConfig.get("PROVIDER"),
             )
             return result.text
         except Exception as e:
