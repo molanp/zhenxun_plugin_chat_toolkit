@@ -174,7 +174,7 @@ def build_prompt(thread: str, memories: list[MemoryStore]) -> str:
     return "\n\n".join(components)
 
 
-def parse_reply_message(text: str) -> tuple[str | None, str]:
+def parse_reply_message(text: str) -> tuple[str | bool, str]:
     # 匹配开头的整个 <reply ... /> 标签并提取 ID
     pattern = r'^\s*<reply\b[^>]*?\bmessage_seq=["\'](\d+)["\'][^>]*/>'
 
@@ -183,4 +183,4 @@ def parse_reply_message(text: str) -> tuple[str | None, str]:
         clean_text = re.sub(pattern, "", text).lstrip()
         return seq_id, clean_text
 
-    return None, text
+    return True, text
