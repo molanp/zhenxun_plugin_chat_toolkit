@@ -38,9 +38,9 @@ class VoiceTool(AbstractTool):
         if not text.strip():
             raise ValueError("text cannot be empty")
         if session.scene.is_group:
-            target = Target(session.scene.id)
+            target = Target(session.scene.id, self_id=session.self_id)
         else:
-            target = Target(session.user.id, private=True)
+            target = Target(session.user.id, private=True, self_id=session.self_id)
         file = "https://www.modelscope.cn/api/v1/studio/Xzkong/AI-jiaran/gradio/file="
         ck = (
             "session=MTc1MjY0NzczOXxEWDhFQVFMX2dBQUJFQUVRQUFEX3hmLUFB"

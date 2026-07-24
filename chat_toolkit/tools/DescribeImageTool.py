@@ -33,9 +33,9 @@ class DescribeImageTool(AbstractTool):
     async def func(
         self, session: Uninfo, image_id: str, question: str | None = None
     ) -> str:
-        image_info = ThreadCache.get(session.user.id, image_id)
+        image_info = ThreadCache.get_resource(session.user.id, image_id)
         if not image_info:
-            raise ValueError(f"找不到 id 为 {image_id} 的图片资源。")
+            raise ValueError(f"找不到 id 为 '{image_id}' 的图片资源")
         try:
             question = question or "请描述这张图片的内容。"
             result = await chat(
@@ -52,4 +52,4 @@ class DescribeImageTool(AbstractTool):
             return result.text
         except Exception as e:
             logger.error("描述图片失败", e=e)
-            return "描述图片失败"
+            return f"描述图片失败, {e!r}"

@@ -1,6 +1,6 @@
 from collections import OrderedDict
 import time
-from typing import Any, TypeVar
+from typing import TypeVar
 
 import aiofiles
 import nonebot
@@ -8,6 +8,7 @@ from pydantic import BaseModel, Extra
 
 from zhenxun.configs.config import Config
 from zhenxun.configs.path_config import DATA_PATH
+from .utils.model import XmlifyContext, ResourceIndex
 
 PROMPT_FILE = DATA_PATH / "chat_toolkit" / "prompt.txt"
 PROMPT_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -116,14 +117,20 @@ class LimitedSizeDict(OrderedDict[K, V]):
 
 
 class ThreadCache:
-    _ThreadCache = LimitedSizeDict[str, Any](max_size=50)
+    _ThreadCache = LimitedSizeDict[str, tuple[XmlifyContext, ResourceIndex]](
+        max_size=50
+    )
 
     @classmethod
-    def get(cls, uid: str, thread_id: str) -> dict[str, str] | None:
+    def get_resource(cls, uid: str, thread_id: str) -> dict[str, str] | None:
         if thread := cls._ThreadCache.get(uid):
-            return thread.resources.get(thread_id)
+            return thread[0].resources.get(thread_id)
         return
 
     @classmethod
-    def set(cls, uid: str, thread: Any):
-        cls._ThreadCache[uid] = thread
+    def get(cls, uid: str):
+        return cls._ThreadCache.get(uid)
+
+    @classmethod
+    def set(cls, uid: str, thread: XmlifyContext, resource_index: ResourceIndex):
+        cls._ThreadCache[uid] = (thread, resource_index)

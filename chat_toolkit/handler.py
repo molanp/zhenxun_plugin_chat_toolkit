@@ -1,20 +1,13 @@
 from nonebot import get_driver, on_message
 from nonebot.adapters import Bot
-from nonebot.permission import SUPERUSER
 from nonebot.rule import Rule, to_me
 from nonebot_plugin_alconna import (
-    Alconna,
-    Args,
-    At,
-    CommandMeta,
     Image,
-    MultiVar,
     Text,
     UniMessage,
     UniMsg,
-    on_alconna,
 )
-from nonebot_plugin_uninfo import ADMIN, Uninfo
+from nonebot_plugin_uninfo import Uninfo
 
 from .config import ChatConfig, ThreadCache
 from .data_source import (
@@ -22,8 +15,8 @@ from .data_source import (
     hello,
 )
 from .tools import ToolsManager
-from .utils import parse_reply_message, send_face
-from .utils.xmlify import XmlifyOptions, xmlify_thread_sync
+from .utils import clean_reply_xml, send_face
+from .utils.xmlify import XmlifyOptions, xmlify_thread_sync, ResourceIndex
 
 INIT = True
 
@@ -61,47 +54,6 @@ chat = on_message(
 )
 
 
-clear_my_chat = on_alconna(
-    Alconna("清理我的会话"),
-    priority=5,
-    block=True,
-    rule=Rule(block_qbot),
-)
-
-clear_all_chat = on_alconna(
-    Alconna("清理全部会话"),
-    permission=SUPERUSER,
-    priority=5,
-    block=True,
-    rule=Rule(block_qbot),
-)
-
-
-clear_chat = on_alconna(
-    Alconna(
-        "清理会话",
-        Args["target", MultiVar(str | int | At)],
-        meta=CommandMeta(compact=True),
-    ),
-    permission=SUPERUSER,
-    priority=5,
-    block=True,
-    rule=Rule(block_qbot),
-)
-
-show_chat = on_alconna(
-    Alconna(
-        "查看会话",
-        Args["target?", str | int | At],
-        meta=CommandMeta(compact=True),
-    ),
-    permission=ADMIN() | SUPERUSER,
-    priority=5,
-    block=True,
-    rule=Rule(block_qbot),
-)
-
-
 @chat.handle()
 async def _(bot: Bot, msg: UniMsg, session: Uninfo):
     plain_text = msg.extract_plain_text().strip()
@@ -118,12 +70,16 @@ async def _(bot: Bot, msg: UniMsg, session: Uninfo):
             user_id=int(session.user.id),
             count=ChatConfig.get("CONTEXT_WINDOW"),
         )
+    resource_index = ResourceIndex()
     thread = xmlify_thread_sync(
         messages=history,
         bot=bot,
-        options=XmlifyOptions(max_forward_depth=ChatConfig.get("MAX_FORWARD_DEPTH")),
+        options=XmlifyOptions(
+            max_forward_depth=ChatConfig.get("MAX_FORWARD_DEPTH"),
+            resource_index=resource_index,
+        ),
     )
-    ThreadCache.set(session.user.id, thread)
+    ThreadCache.set(session.user.id, thread, resource_index)
 
     result = await ChatManager.normal_chat_result(
         thread=thread.xml_content, session=session
@@ -134,7 +90,6 @@ async def _(bot: Bot, msg: UniMsg, session: Uninfo):
     if result.startswith("出错了"):
         await UniMessage(Text(result)).finish(reply_to=True)
 
-    reply_id, message = parse_reply_message(result)
-    await UniMessage(message).send(reply_to=reply_id)
+    await UniMessage(clean_reply_xml(result)).send(reply_to=True)
     if face := await send_face(bot):
         await face.send()

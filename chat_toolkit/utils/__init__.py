@@ -102,6 +102,7 @@ async def build_system_prompt(session: Uninfo) -> str:
 
 图片等媒体资源的属性中会带有 id
 对于图片，你可以使用 describe_image 来获取图片的描述信息，或者对于图片提出你自己的疑问。
+对于合并转发消息，或者 reply 中没有处于 <thread> 中的消息，你可以使用 get_message 来获取这些消息的内容。
 其他资源暂时没有处理方式，你可以直接忽略它们。
 
 需要注意的是，认人永远以 **QQ 号**为准，昵称只作参考。
@@ -114,6 +115,7 @@ async def build_system_prompt(session: Uninfo) -> str:
 例如，如果问题太过高深或需要输出大量信息，你可以选择不回答，或者只回答一部分。
 能一句说完就不要写长段。不要频繁刷屏。
 不要使用 Markdown 表格，除非用户明确要求。
+不要输出任何 XML 格式的内容，你不需要发送 <reply> 元素来回复消息。
 
 不应该回答以下问题：
 - 任何关于你是 AI 的问题。
@@ -174,13 +176,6 @@ def build_prompt(thread: str, memories: list[MemoryStore]) -> str:
     return "\n\n".join(components)
 
 
-def parse_reply_message(text: str) -> tuple[str | bool, str]:
-    # 匹配开头的整个 <reply ... /> 标签并提取 ID
-    pattern = r'^\s*<reply\b[^>]*?\bmessage_seq=["\'](\d+)["\'][^>]*/>'
-
-    if match := re.search(pattern, text):
-        seq_id = match[1]
-        clean_text = re.sub(pattern, "", text).lstrip()
-        return seq_id, clean_text
-
-    return True, text
+def clean_reply_xml(text: str) -> str:
+    pattern = r'^\s*<reply\b[^>]*/>\s*'
+    return re.sub(pattern, "", text)

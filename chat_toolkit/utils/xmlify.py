@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass, field
 from html import escape
 from typing import Any
 from xml.etree.ElementTree import Element
@@ -35,32 +34,7 @@ from nonebot_plugin_alconna import (
     Video,
     Voice,
 )
-
-
-@dataclass
-class ResourceIndex:
-    image: int = 0
-    record: int = 0
-    video: int = 0
-
-
-@dataclass
-class XmlifyOptions:
-    max_forward_depth: int = 0
-    indent: str = "  "
-    resource_index: ResourceIndex | None = None
-
-
-@dataclass
-class XmlifyContext:
-    xml_content: str
-    resources: dict[str, dict[str, str]] = field(default_factory=dict)
-    files: dict[str, dict[str, Any]] = field(default_factory=dict)
-
-
-# ---------------------------------------------------------------------------
-# OneBot v11 历史消息归一化
-# ---------------------------------------------------------------------------
+from .model import XmlifyContext, XmlifyOptions, ResourceIndex
 
 
 def normalize_history_messages(
