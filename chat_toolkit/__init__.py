@@ -17,7 +17,7 @@ __plugin_meta__ = PluginMetadata(
     """.strip(),
     extra=PluginExtraData(
         author="molanp",
-        version="1.3",
+        version="1.4",
         configs=[
             RegisterConfig(
                 key="PROVIDER",
