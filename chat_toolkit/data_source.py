@@ -146,13 +146,6 @@ class ChatManager:
             logger.error(f"工具链处理异常: {e}", "chat_toolkit", session=session, e=e)
             return f"出错了: {e}"
 
-        if "no_reply" in result.text:
-            logger.warning(
-                f"Rejected message from {session.user.id} in {session.scene.name}"
-                f" {session.scene.id}: {result.text}"
-            )
-            return
-
         return result.text
 
     @classmethod

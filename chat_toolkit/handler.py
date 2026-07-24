@@ -7,7 +7,10 @@ from nonebot_plugin_alconna import (
     UniMessage,
     UniMsg,
 )
+from nonebot_plugin_alconna.uniseg.functions import message_reaction
 from nonebot_plugin_uninfo import Uninfo
+
+from zhenxun.services.log import logger
 
 from .config import ChatConfig, ThreadCache
 from .data_source import (
@@ -16,7 +19,7 @@ from .data_source import (
 )
 from .tools import ToolsManager
 from .utils import clean_reply_xml, send_face
-from .utils.xmlify import XmlifyOptions, xmlify_thread_sync, ResourceIndex
+from .utils.xmlify import ResourceIndex, XmlifyOptions, xmlify_thread_sync
 
 INIT = True
 
@@ -56,6 +59,9 @@ chat = on_message(
 
 @chat.handle()
 async def _(bot: Bot, msg: UniMsg, session: Uninfo):
+    if session.scene.is_group:
+        await message_reaction(emoji="424", bot=bot)
+
     plain_text = msg.extract_plain_text().strip()
     if not plain_text:
         text, image_path = hello()
@@ -85,6 +91,15 @@ async def _(bot: Bot, msg: UniMsg, session: Uninfo):
         thread=thread.xml_content, session=session
     )
     if not result:
+        return
+
+    if "no_reply" in result:
+        logger.warning(
+            f"Rejected message from {session.user.id} in {session.scene.name}"
+            f" {session.scene.id}: {result}"
+        )
+        if session.scene.is_group:
+            await message_reaction(emoji="479", bot=bot)
         return
 
     if result.startswith("出错了"):

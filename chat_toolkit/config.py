@@ -8,7 +8,8 @@ from pydantic import BaseModel, Extra
 
 from zhenxun.configs.config import Config
 from zhenxun.configs.path_config import DATA_PATH
-from .utils.model import XmlifyContext, ResourceIndex
+
+from .model import ResourceIndex, XmlifyContext
 
 PROMPT_FILE = DATA_PATH / "chat_toolkit" / "prompt.txt"
 PROMPT_FILE.parent.mkdir(parents=True, exist_ok=True)

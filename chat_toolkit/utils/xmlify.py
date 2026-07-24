@@ -34,7 +34,8 @@ from nonebot_plugin_alconna import (
     Video,
     Voice,
 )
-from .model import XmlifyContext, XmlifyOptions, ResourceIndex
+
+from ..model import ResourceIndex, XmlifyContext, XmlifyOptions
 
 
 def normalize_history_messages(
