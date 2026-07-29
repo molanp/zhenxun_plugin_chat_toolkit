@@ -23,7 +23,7 @@ PROVIDERS:
     api_base: https://api.mengluo.work/
     api_type: openai
     models:
-      - model_name: grok-4.5
+      - model_name: gemini-3.5-flash
 ```
 
 ## ✨ 功能
