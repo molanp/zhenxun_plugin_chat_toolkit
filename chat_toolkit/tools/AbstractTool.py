@@ -18,25 +18,15 @@ class AbstractTool(ABC):
     """符合 JSON Schema 的参数定义"""
     description: str
     """工具描述"""
+    max_calls_per_run: int | None = None
+    """单次 Agent 运行中的软调用上限，超限时返回已有结果而不中断。"""
 
     @abstractmethod
     async def func(self, session: Any, *args: Any, **kwargs: Any) -> str:
         """由工具类实现的调用逻辑"""
 
-    def to_schema(self) -> dict[str, Any]:
-        return {
-            "type": "function",
-            "function": {
-                "name": self.name,
-                "description": self.description,
-                "parameters": self.parameters,
-            },
-        }
-
-
 class ToolRegistry:
     _registry: ClassVar[dict[str, AbstractTool]] = {}
-    _disabled_tools: ClassVar[set[str]] = set()
     _lock = asyncio.Lock()
 
     @classmethod
@@ -71,7 +61,6 @@ class ToolRegistry:
 
     @classmethod
     def apply_disabled(cls, tools: list[str]) -> None:
-        cls._disabled_tools.update(tools)
         for tool_name in tools:
             if tool_name in cls._registry:
                 del cls._registry[tool_name]
@@ -86,43 +75,11 @@ class ToolRegistry:
                 "chat_toolkit.tools",
             )
             return
-        if instance.name in cls._disabled_tools:
-            logger.info(
-                f"工具 {instance.name} 被禁用，跳过注册。",
-                "chat_toolkit.tools",
-            )
-            return
         cls._registry[instance.name] = instance
         logger.success(f"注册工具 {instance.name} 成功", "chat_toolkit.tools")
 
     @classmethod
-    def disable_tools(cls, tools: list[str]) -> None:
-        cls._disabled_tools.update(tools)
-        for tool_name in tools:
-            if tool_name in cls._registry:
-                del cls._registry[tool_name]
-                logger.info(f"已禁用工具 {tool_name}", "chat_toolkit.tools")
-
-    @classmethod
-    def get_tool(cls, name: str) -> AbstractTool | None:
-        return cls._registry.get(name)
-
-    @classmethod
     def get_tools(cls) -> list[AbstractTool]:
         return list(cls._registry.values())
-
-    @classmethod
-    def clear(cls) -> None:
-        cls._registry.clear()
-
-    @classmethod
-    async def reload(cls, disable_tools: list[str] | None = None) -> None:
-        async with cls._lock:
-            cls.clear()
-            cls._disabled_tools.clear()
-            await cls._load_all_modules()
-            if disable_tools:
-                cls.apply_disabled(disable_tools)
-
 
 registry = ToolRegistry()

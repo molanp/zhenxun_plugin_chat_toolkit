@@ -17,7 +17,7 @@ __plugin_meta__ = PluginMetadata(
     """.strip(),
     extra=PluginExtraData(
         author="molanp",
-        version="1.5",
+        version="1.6",
         configs=[
             RegisterConfig(
                 key="PROVIDER",
@@ -34,6 +34,23 @@ __plugin_meta__ = PluginMetadata(
                 default_value="",
             ),
             RegisterConfig(
+                key="SEARCH_PROVIDER",
+                value="",
+                type=str,
+                help=(
+                    "联网搜索使用的模型，需支持原生 web_search 工具"
+                    "；若未指定则默认使用 PROVIDER 中指定的模型"
+                ),
+                default_value="",
+            ),
+            RegisterConfig(
+                key="WEB_SEARCH_ENABLED",
+                value=False,
+                type=bool,
+                help="是否启用外部网页搜索工具，默认为 False",
+                default_value=False,
+            ),
+            RegisterConfig(
                 key="CONTEXT_WINDOW",
                 value=10,
                 type=int,
@@ -44,7 +61,7 @@ __plugin_meta__ = PluginMetadata(
                 key="MAX_TOOL_CALLS_PER_TURN",
                 value=3,
                 type=int,
-                help="单次对话中允许的最大工具迭代次数，0表示禁用工具调用",
+                help="单次对话中允许的最大 Agent 工具循环轮数，0表示禁用工具调用",
                 default_value=3,
             ),
             RegisterConfig(

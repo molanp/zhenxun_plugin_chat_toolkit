@@ -53,34 +53,3 @@ class MuteTool(AbstractTool):
 
         except Exception:
             return "error: 没有权限进行禁言操作，你可以尝试拉黑"
-
-
-# class UnMuteTool(AbstractTool):
-#     """取消用户禁言的工具"""
-
-#     name = "unmute"
-#     description = "安全与管理工具。仅在收到明确帮他人解除禁言的指令，且对话中给出了具体用户id时调用。日常闲聊绝对禁止调用。"  # noqa: E501
-#     parameters = {
-#         "type": "object",
-#         "properties": {
-#             "uid": {
-#                 "type": "number",
-#                 "description": "需要解除禁言的目标用户id。必须从用户指令中准确提取具体数字，严禁留空或胡编乱造。",  # noqa: E501
-#             },
-#         },
-#         "required": ["uid"],
-#     }
-
-#     async def func(self, session: Uninfo, uid: str) -> str:
-#         if not session.scene.is_group:
-#             return "不是群聊环境，不能执行此操作"
-#         bot = get_bot(self_id=session.self_id)
-#         gid = session.scene.id
-#         level = await LevelUser.get_user_level(session.user.id, gid)
-#         if level < 5 and uid != session.user.id:
-#             return "用户权限不足，不能执行此操作"
-#         try:
-#             await PlatformUtils.ban_user(bot, uid, gid, 0)
-#             return f"取消禁言用户{uid} 成功"
-#         except Exception:
-#             return f"失败了，我在这个群聊 {gid} 没有权限解禁别人"

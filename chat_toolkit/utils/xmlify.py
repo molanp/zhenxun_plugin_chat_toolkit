@@ -198,7 +198,7 @@ def _set_attrs(element: Element, values: dict[str, Any]) -> None:
             continue
         if isinstance(value, bool):
             element.set(key, "true" if value else "false")
-        elif isinstance(value, (str, int, float)):
+        elif isinstance(value, str | int | float):
             element.set(key, str(value))
 
 
@@ -226,7 +226,7 @@ def _build_plain_node(name: str, values: dict[str, Any]) -> Element:
             continue
         if isinstance(value, dict):
             element.append(_build_plain_node(key, value))
-        elif isinstance(value, (str, int, float, bool)):
+        elif isinstance(value, str | int | float | bool):
             child = Element(key)
             if value is True:
                 child.text = "true"
@@ -356,24 +356,22 @@ class _XmlifyBuilder:
             )
 
         if isinstance(segment, Image):
-            return self._extracted_from_build_element_from_segment_38(segment)
-        if isinstance(segment, (Voice, Audio)):
-            attrs = self._extracted_from_build_element_from_segment_53(
-                "record", segment
-            )
+            return self._build_image_element(segment)
+        if isinstance(segment, Voice | Audio):
+            attrs = self._register_media("record", segment)
             duration = getattr(segment, "duration", None)
             if duration is not None:
                 attrs["duration"] = duration
             return _build_attributed_element("record", attrs)
 
         if isinstance(segment, Video):
-            attrs = self._extracted_from_build_element_from_segment_53("video", segment)
+            attrs = self._register_media("video", segment)
             if segment.duration is not None:
                 attrs["duration"] = segment.duration
             return _build_attributed_element("video", attrs)
 
         if isinstance(segment, File):
-            return self._extracted_from_build_element_from_segment_70(segment)
+            return self._build_file_element(segment)
         if isinstance(segment, Reference):
             return self._build_forward(segment, forward_depth)
 
@@ -394,8 +392,7 @@ class _XmlifyBuilder:
 
         return None
 
-    # TODO Rename this here and in `build_element_from_segment`
-    def _extracted_from_build_element_from_segment_70(self, segment):
+    def _build_file_element(self, segment: File) -> Element:
         file_name = segment.name or "file.bin"
         self.files[file_name] = {
             "file_name": file_name,
@@ -409,8 +406,7 @@ class _XmlifyBuilder:
             attrs["size"] = size
         return _build_tagged_text_node("file", file_name, attrs)
 
-    # TODO Rename this here and in `build_element_from_segment`
-    def _extracted_from_build_element_from_segment_38(self, segment):
+    def _build_image_element(self, segment: Image) -> Element:
         resource_key = self._new_resource_key("image")
         self.resources[resource_key] = {"url": _media_url(segment)}
         attrs: dict[str, Any] = {"id": resource_key}
@@ -425,9 +421,12 @@ class _XmlifyBuilder:
             summary = segment.name
         return _build_tagged_text_node("image", summary, attrs)
 
-    # TODO Rename this here and in `build_element_from_segment`
-    def _extracted_from_build_element_from_segment_53(self, arg0, segment):
-        resource_key = self._new_resource_key(arg0)
+    def _register_media(
+        self,
+        media_type: str,
+        segment: Voice | Audio | Video,
+    ) -> dict[str, str]:
+        resource_key = self._new_resource_key(media_type)
         self.resources[resource_key] = {"url": _media_url(segment)}
         return {"id": resource_key}
 

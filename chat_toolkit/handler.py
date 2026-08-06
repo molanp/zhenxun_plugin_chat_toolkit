@@ -44,10 +44,12 @@ async def block_qbot(session: Uninfo) -> bool:
 
 @get_driver().on_startup
 async def init_tools():
-    if ChatConfig.get("MEMORY_ENABLED"):
-        await ToolsManager.init()
-    else:
-        await ToolsManager.init(disable_tools=["remember", "forget"])
+    disabled_tools: list[str] = []
+    if not ChatConfig.get("MEMORY_ENABLED"):
+        disabled_tools.extend(["remember", "forget"])
+    if not ChatConfig.get("WEB_SEARCH_ENABLED"):
+        disabled_tools.append("external_web_search")
+    await ToolsManager.init(disable_tools=disabled_tools)
 
 
 chat = on_message(
@@ -66,6 +68,7 @@ async def _(bot: Bot, msg: UniMsg, session: Uninfo):
     if not plain_text:
         text, image_path = hello()
         await UniMessage([Text(text), Image(path=image_path)]).finish(reply_to=True)
+
     if session.scene.is_group:
         history = await bot.get_group_msg_history(
             group_id=int(session.scene.id),
@@ -89,6 +92,11 @@ async def _(bot: Bot, msg: UniMsg, session: Uninfo):
 
     result = await ChatManager.normal_chat_result(
         thread=thread.xml_content, session=session
+    )
+    logger.info(
+        f"问题: {plain_text} 回答: {result or '（空响应）'}",
+        "chat_toolkit.chat",
+        session=session,
     )
     if not result:
         return

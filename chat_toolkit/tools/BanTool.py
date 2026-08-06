@@ -55,22 +55,3 @@ class BanTool(AbstractTool):
             )
         except Exception as e:
             return f"error: {e}"
-
-
-# class UnBanTool(AbstractTool):
-
-#     name = "unban"
-#     description = "取消拉黑用户的工具。仅在收到明确帮他人解除拉黑的指令时使用"
-#     parameters: ClassVar = {
-#         "type": "object",
-#         "properties": {
-#             "uid": {"type": "number", "description": "需要解封的目标用户id"},
-#         },
-#         "required": ["uid"],
-#     }
-
-#     async def func(self, uid: str) -> str:
-#         if await BanConsole.unban(uid):
-#             return f"success: user_{uid}_has_been_unbanned"
-#         else:
-#             return f"error: user_{uid}_not_in_black_list"

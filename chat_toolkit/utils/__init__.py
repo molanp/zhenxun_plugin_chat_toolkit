@@ -159,6 +159,17 @@ no_reply (用户的提问涉及 xxx，不该回答)
 没有值得记录或删除的内容时，不要调用工具。""".strip(),  # noqa: E501
             )
         )
+    if ChatConfig.get("WEB_SEARCH_ENABLED"):
+        components.extend(
+            (
+                "# 网页搜索说明",
+                """\
+你可以使用 external_web_search 工具进行网页搜索。
+仅在问题需要最新或外部信息时使用。每轮对话最多调用一次，必须把需要检索的内容合并成一个完整、明确的问题。
+收到搜索结果后，立即根据结果回答用户；即使结果不完整，也不要再次调用网页搜索工具。
+调用时不要在对用户的回复里提及工具或“搜索网页”。""".strip(),
+            )
+        )
     return "\n\n".join(components)
 
 
