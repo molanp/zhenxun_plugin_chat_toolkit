@@ -52,10 +52,10 @@ __plugin_meta__ = PluginMetadata(
             ),
             RegisterConfig(
                 key="CONTEXT_WINDOW",
-                value=10,
+                value=20,
                 type=int,
                 help="上下文窗口大小，即提供给大模型的消息总数，默认值为 20",
-                default_value=10,
+                default_value=20,
             ),
             RegisterConfig(
                 key="MAX_TOOL_CALLS_PER_TURN",

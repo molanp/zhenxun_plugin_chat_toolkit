@@ -61,7 +61,7 @@ PROVIDERS:
 |        `PROVIDER`         | **是** |                   -                    |                                           用于对话的语言模型，包含name/model                                           |
 |     `VISION_PROVIDER`     | **否** |                   -                    |                            图于图像识别的语言模型，若未指定则默认使用 PROVIDER 中指定的模型                            |
 | `MAX_TOOL_CALLS_PER_TURN` | **否** |                  `3`                   |                                  单次对话中允许的最大工具迭代次数，0 表示禁用工具调用                                  |
-|     `CONTEXT_WINDOW`      | **否** |                  `10`                  |                                 上下文窗口大小，即提供给大模型的消息总数，默认值为 10                                  |
+|     `CONTEXT_WINDOW`      | **否** |                  `20`                  |                                 上下文窗口大小，即提供给大模型的消息总数，默认值为 20                                  |
 |     `MEMORY_ENABLED`      | **否** |                 `True`                 |                                                    是否启用记忆功能                                                    |
 |   `WEB_SEARCH_ENABLED`    | **否** |                `False`                 |                                                  是否启用网页搜索功能                                                  |
 |     `SEARCH_PROVIDER`     | **否** |                   -                    | 联网搜索使用的模型，需支持原生 web_search 工具；若未指定则默认使用 PROVIDER 中指定的模型 (建议模型`deepseek-v4-flash`) |
