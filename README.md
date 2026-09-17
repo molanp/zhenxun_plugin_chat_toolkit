@@ -64,7 +64,7 @@ PROVIDERS:
 |     `CONTEXT_WINDOW`      | **否** |                  `20`                  |                                 上下文窗口大小，即提供给大模型的消息总数，默认值为 20                                  |
 |     `MEMORY_ENABLED`      | **否** |                 `True`                 |                                                    是否启用记忆功能                                                    |
 |   `WEB_SEARCH_ENABLED`    | **否** |                `False`                 |                                                  是否启用网页搜索功能                                                  |
-|     `SEARCH_PROVIDER`     | **否** |                   -                    | 联网搜索使用的模型，需支持原生 web_search 工具；若未指定则默认使用 PROVIDER 中指定的模型 (建议模型`deepseek-v4-flash`) |
+|     `SEARCH_PROVIDER`     | **否** |                   -                    | 联网搜索使用的模型，需支持原生 web_search 工具；若未指定则默认使用 PROVIDER 中指定的模型 (建议模型`gpt-5.6-luna`) |
 |    `MEMORY_MAX_WINDOW`    | **否** |                  `20`                  |                                记忆窗口大小，即在对话中最多注入的记忆条数，默认值为 20                                 |
 | `MEMORY_MAX_SCOPE_COUNT`  | **否** |                  `50`                  |                                   对于每个对话场景，最多允许的记忆条数，默认值为 50                                    |
 |   `FACE_SEND_FREQUENCY`   | **否** |                  `20`                  |                                          触发对话后发送表情包的概率（百分比）                                          |
