@@ -4,7 +4,6 @@ from typing import ClassVar
 from nonebot import get_bot
 from nonebot_plugin_uninfo import Uninfo
 
-from zhenxun.models.level_user import LevelUser
 from zhenxun.utils.platform import PlatformUtils
 
 from .AbstractTool import AbstractTool
@@ -37,14 +36,17 @@ class MuteTool(AbstractTool):
     async def func(self, session: Uninfo, minute: int | None = None) -> str:
         if not session.scene.is_group:
             return "error: 不是群聊环境"
+        assert session.member
 
         bot = get_bot(self_id=session.self_id)
         gid = session.scene.id
         target_uid = session.user.id
 
-        level = await LevelUser.get_user_level(session.user.id, gid)
-        if level < 5 and target_uid != session.user.id:
-            return "error: permission_denied (current user level is less than 5)"
+        is_admin = session.user.id in bot.config.superusers or any(
+            r.id in {"ADMINISTRATOR", "OWNER"} for r in session.member.roles
+        )
+        if not is_admin and target_uid != session.user.id:
+            return "error: permission_denied (current user is not admin)"
 
         mute_time = minute or random.randint(1, 100)
         try:
